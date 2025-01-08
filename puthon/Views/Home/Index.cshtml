@@ -1,9 +1,51 @@
-﻿@{
+﻿@using puthon.Socket
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-    <p>Time @DateTime.Now</p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Example</title>
+</head>
+<body>
+<h2>WebSocket Test</h2>
+<button id="connectButton">Connect to WebSocket</button>
+<div id="messages"></div>
+
+<script type="text/javascript">
+    var socket;
+    var connectButton = document.getElementById('connectButton');
+    var messagesDiv = document.getElementById('messages');
+
+    connectButton.addEventListener('click', function() {
+        if (socket) {
+            socket.close();
+        }
+
+        // WebSocket 연결을 위한 URL
+        var protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+        socket = new WebSocket(protocol + window.location.host + "/ws"); // 상대 경로
+
+        socket.onopen = function() {
+            messagesDiv.innerHTML += "<p>WebSocket connection established!</p>";
+            socket.send("Hello Server");
+        };
+
+        socket.onmessage = function(event) {
+            messagesDiv.innerHTML += "<p>Message from server: " + event.data + "</p>";
+        };
+
+        socket.onclose = function() {
+            messagesDiv.innerHTML += "<p>WebSocket connection closed!</p>";
+        };
+
+        socket.onerror = function(error) {
+            messagesDiv.innerHTML += "<p>Error: " + error + "</p>";
+        };
+    });
+</script>
+</body>
+</html>

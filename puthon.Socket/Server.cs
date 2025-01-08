@@ -14,7 +14,7 @@ using System.Net.Sockets;
 // https://medium.com/@Alikhalili/building-a-high-performance-tcp-server-from-scratch-a8ede35c4cc2
 
 [PublicAPI]
-public sealed class Server : IDisposable
+public static class Server
 {
     public static async Task WebSocketHandler(HttpContext ctx)
     {
@@ -25,125 +25,15 @@ public sealed class Server : IDisposable
         }
         
         var ws = await ctx.WebSockets.AcceptWebSocketAsync();
-        // var task = Task.Run(() => HandleConnection(ws));
-        
-        // var message = "Hello World!";
-        // var bytes = Encoding.UTF8.GetBytes(message);
-        // var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
-        //
-        // while (true)
-        // {
-        //     if (ws.State is WebSocketState.Closed
-        //         or WebSocketState.Aborted)
-        //     {
-        //         break;
-        //     }
-        //
-        //     if (ws.State is WebSocketState.Open)
-        //     {
-        //         Console.WriteLine("send msg");
-        //         await ws.SendAsync(arraySegment,
-        //             WebSocketMessageType.Text,
-        //             true,
-        //             CancellationToken.None);
-        //             ;
-        //     }
-        //         
-        //     Thread.Sleep(1000);
-        // }
+        await Client
+                .Create(ws)
+                .StartAsync()
+            ;
 
-        var t = Task.Run(() => TestThread(ws));
-        await t;
-        
-        // var handler = new ConnectionHandler(ws);
-        // ThreadPool.UnsafeQueueUserWorkItem(handler, preferLocal: false);
+        // await Task.Run(async () => await TestThread(ws));
         
         Console.WriteLine("Test success");
     }
-
-    private static void TestThread(object? ctx)
-    {
-        try
-        {
-            var ws = (WebSocket)ctx;
-
-            while (true)
-            {
-                if (ws.State is WebSocketState.Closed
-                    or WebSocketState.Aborted)
-                {
-                    break;
-                }
-
-                SendMessage(ws, "test");
-                
-                Thread.Sleep(1000);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-        finally
-        {
-            
-        }
-    }
-
-    private static Task SendMessage(WebSocket t, string msg)
-    {
-        var bytes = Encoding.UTF8.GetBytes(msg);
-        var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
-        
-        return t.SendAsync(arraySegment,
-            WebSocketMessageType.Text,
-            true,
-            CancellationToken.None);
-        ;
-    }
-    private static void HandleConnection(WebSocket ws)
-    {
-        var handler = new ConnectionHandler(ws);
-        handler.Execute();
-    }
-    
-    private readonly Socket m_Listener;
-
-    private Thread? m_UpdateThread;
-
-    public bool IsRunning { get; private set; }
-    
-    // public Server(int port)
-    // {
-    //     m_Listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-    //     m_Listener.Bind(new IPEndPoint(IPAddress.Any, port));
-    // }
-    public void Dispose()
-    {
-        m_UpdateThread?.Interrupt();
-        m_Listener.Dispose();
-    }
-    //
-    // public void Start()
-    // {
-    //     Assert.That(!IsRunning, "is already running");
-    //     
-    //     m_Listener.Listen(backlog: 4096);
-    //     IsRunning = true;
-    //
-    //     m_UpdateThread = new Thread(Update);
-    //     m_UpdateThread.Start();
-    // }
-    //
-    // private void Update()
-    // {
-    //     while (true)
-    //     {
-    //         var acceptSocket = m_Listener.Accept();
-    //         var handler = new ConnectionHandler(acceptSocket);
-    //         ThreadPool.UnsafeQueueUserWorkItem(handler, preferLocal: false);
-    //     }
-    // }
     
     class ConnectionHandler : IThreadPoolWorkItem
     {
@@ -225,10 +115,4 @@ public sealed class Server : IDisposable
     //         }
     //     }
     // }
-}
-
-
-public sealed class Client
-{
-    
 }
