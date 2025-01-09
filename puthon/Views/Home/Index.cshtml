@@ -31,7 +31,16 @@
 
         socket.onopen = function() {
             messagesDiv.innerHTML += "<p>WebSocket connection established!</p>";
-            socket.send("Hello Server");
+            //socket.send("Hello Server");
+            socket.send(JSON.stringify(
+                {
+                    messageType: 1,
+                    data: 
+                    {
+                        json: true
+                    }
+                }
+            ))
         };
 
         socket.onmessage = function(event) {

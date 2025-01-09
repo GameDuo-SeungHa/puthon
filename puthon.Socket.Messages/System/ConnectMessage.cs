@@ -1,7 +1,9 @@
-﻿namespace puthon.Socket.Messages.System;
+﻿using Newtonsoft.Json;
 
-[Serializable]
+namespace puthon.Socket.Messages.System;
+
+[Serializable, JsonObject]
 public struct ConnectMessage : INetworkMessage
 {
-    
+    public bool json;
 }

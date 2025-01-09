@@ -2,6 +2,7 @@ namespace puthon.Socket.Messages;
 
 public enum MessageType : ulong
 {
-    Text,
-    Json,
+    Undefined = 0,
+    
+    Connect
 }

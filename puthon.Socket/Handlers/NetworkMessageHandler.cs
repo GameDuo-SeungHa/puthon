@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Newtonsoft.Json.Linq;
 
 namespace puthon.Socket.Messages;
 
@@ -29,19 +30,29 @@ public abstract class NetworkMessageHandler
 
     public abstract MessageType MessageType { get; }
     
-    public abstract void Process(ArraySegment<byte> value);
+    public abstract void Process(in IClient client, ArraySegment<byte> value);
+    public abstract void Process(in IClient client, JObject jo);
 }
 
 public abstract class NetworkMessageHandler<TMessage> : NetworkMessageHandler
     where TMessage : unmanaged, INetworkMessage
 {
-    public sealed override void Process(ArraySegment<byte> value)
+    public NetworkMessageHandler()
+    {
+    }
+    
+    public sealed override void Process(in IClient client, ArraySegment<byte> value)
     {
         var e = MemoryMarshal.Cast<byte, TMessage>(value);
 
         TMessage msg = e[0];
-        OnProcess(msg);
+        Process(client, msg);
+    }
+    public sealed override void Process(in IClient client, JObject jo)
+    {
+        TMessage msg = jo.ToObject<TMessage>();
+        Process(client, msg);
     }
 
-    protected abstract void OnProcess(in TMessage message);
+    public abstract void Process(in IClient client, in TMessage message);
 }

@@ -41,6 +41,8 @@ internal sealed class WebSocketClient : IClient, IDisposable
     }
     public void Dispose()
     {
+        ThrowIfDisposed();
+        
         m_Cts?.Cancel();
         m_Cts?.Dispose();
         m_Cts = null;
@@ -84,7 +86,7 @@ internal sealed class WebSocketClient : IClient, IDisposable
                 {
                     break;
                 }
-                
+
                 var res = await m_Socket.ReceiveAsync(buffer, CancellationToken.None);
 
                 if (res.MessageType is WebSocketMessageType.Close)
@@ -95,9 +97,38 @@ internal sealed class WebSocketClient : IClient, IDisposable
                 ArraySegment<byte> data = new ArraySegment<byte>(
                     buffer, 0, res.Count);
 
+                Console.WriteLine($"Message received type: {res.MessageType}");
+
                 if (res.MessageType is WebSocketMessageType.Text)
                 {
-                    ProcessTextData(data);
+                    string text = Encoding.UTF8.GetString(data);
+                    Console.WriteLine(text);
+                    JObject jo;
+                    try
+                    {
+                        jo = JObject.Parse(text);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        continue;
+                    }
+
+                    MessageType msgType = (MessageType)(jo["messageType"] ?? 0).Value<ulong>();
+
+                    if (msgType is MessageType.Undefined)
+                    {
+                        Console.WriteLine("msg type is not provided");
+                        continue;
+                    }
+
+                    if (!NetworkMessageHandler.Handlers.TryGetValue(msgType, out var handler))
+                    {
+                        Console.WriteLine($"msg type is not handled {msgType}");
+                        continue;
+                    }
+
+                    handler.Process(this, jo);
                 }
                 else if (res.MessageType is WebSocketMessageType.Binary)
                 {
@@ -108,8 +139,11 @@ internal sealed class WebSocketClient : IClient, IDisposable
         catch (Exception e)
         {
             Console.WriteLine(e);
+            Dispose();
             throw;
         }
+        
+        Dispose();
     }
     private async Task UpdateSendAsync()
     {
@@ -123,43 +157,17 @@ internal sealed class WebSocketClient : IClient, IDisposable
                     break;
                 }
 
-                await SendMessageAsync("test", CancellationToken.None);
+                // await SendMessageAsync("test", CancellationToken.None);
 
-                Thread.Sleep(1000);
+                await Task.Yield();
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
-            throw;
-        }
-        finally
-        {
-            
         }
     }
-
-    private void ProcessTextData(ArraySegment<byte> data)
-    {
-        string text = Encoding.UTF8.GetString(data);
-       
-    }
-    private void ProcessJsonData(ArraySegment<byte> data)
-    {
-        string text = Encoding.UTF8.GetString(data);
-        JObject jo;
-        try
-        {
-            jo = JObject.Parse(text);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return;
-        }
-        
-        
-    }
+   
     private unsafe void ProcessBinaryData(ArraySegment<byte> data)
     {
         if (data.Array is null)
@@ -174,21 +182,12 @@ internal sealed class WebSocketClient : IClient, IDisposable
 
             if (NetworkMessageHandler.Handlers.TryGetValue(wrapper->messageType, out var handler))
             {
-                handler.Process(value);
+                handler.Process(this, value);
             }
             else
             {
-                switch (wrapper->messageType)
-                {
-                    case MessageType.Text:
-                        ProcessTextData(value);
-                        break;
-                    case MessageType.Json:
-                        ProcessJsonData(value);
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
+                Console.WriteLine(
+                    $"Message {wrapper->messageType} is not handled");
             }
         }
     }
