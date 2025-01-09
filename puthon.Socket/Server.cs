@@ -1,14 +1,12 @@
-﻿using System.Collections.Concurrent;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
-using NUnit.Framework;
+using puthon.Socket.Messages;
+using System.Net;
+using puthon.Socket.Messages.Handlers;
 
 namespace puthon.Socket;
-
-using System.Net;
-using System.Net.Sockets;
 
 // https://medium.com/bina-nusantara-it-division/implementing-websocket-client-and-server-on-asp-net-core-6-0-c-4fbda11dbceb
 // https://medium.com/@Alikhalili/building-a-high-performance-tcp-server-from-scratch-a8ede35c4cc2
@@ -16,6 +14,13 @@ using System.Net.Sockets;
 [PublicAPI]
 public static class Server
 {
+    public static void Initialize()
+    {
+        NetworkMessageHandler
+            .Create<ConnectMessageHandler>()
+            ;
+    }
+    
     public static async Task WebSocketHandler(HttpContext ctx)
     {
         if (!ctx.WebSockets.IsWebSocketRequest)
@@ -25,7 +30,7 @@ public static class Server
         }
         
         var ws = await ctx.WebSockets.AcceptWebSocketAsync();
-        await Client
+        await WebSocketClient
                 .Create(ws)
                 .StartAsync()
             ;

@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "puthon.Socket", "puthon.Soc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestClient", "TestClient\TestClient.csproj", "{4DE272EE-07E3-4FB2-BB8A-8ECF7F62E901}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "puthon.Socket.Messages", "puthon.Socket.Messages\puthon.Socket.Messages.csproj", "{7277788F-0833-4BB1-BFFA-4A90BB84C0D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{4DE272EE-07E3-4FB2-BB8A-8ECF7F62E901}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4DE272EE-07E3-4FB2-BB8A-8ECF7F62E901}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4DE272EE-07E3-4FB2-BB8A-8ECF7F62E901}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7277788F-0833-4BB1-BFFA-4A90BB84C0D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7277788F-0833-4BB1-BFFA-4A90BB84C0D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7277788F-0833-4BB1-BFFA-4A90BB84C0D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7277788F-0833-4BB1-BFFA-4A90BB84C0D1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,5 +1,6 @@
 using puthon.Socket;
 
+Server.Initialize();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

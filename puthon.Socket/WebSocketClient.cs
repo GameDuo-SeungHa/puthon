@@ -1,23 +1,27 @@
 using System.Diagnostics;
 using System.Net.WebSockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using puthon.Socket.Collections;
+using puthon.Socket.Messages;
 
 namespace puthon.Socket;
 
-internal sealed class Client : IClient, IDisposable
+internal sealed class WebSocketClient : IClient, IDisposable
 {
     private static ulong s_ConnectionCount;
 
-    private static readonly Pool<Client> s_Pool = new(() => new(), null, null);
+    private static readonly Pool<WebSocketClient> s_Pool = new(() => new(), null, null);
     private static readonly Dictionary<ulong, IClient> s_ClientMap = new();
 
     public static IReadOnlyDictionary<ulong, IClient> Clients => s_ClientMap;
     
-    public static Client Create(WebSocket socket)
+    public static WebSocketClient Create(WebSocket socket)
     {
-        Client e = s_Pool.GetOrCreate();
+        WebSocketClient e = s_Pool.GetOrCreate();
         e.Initialize(socket);
         s_ClientMap[s_ConnectionCount++] = e;
 
@@ -50,7 +54,7 @@ internal sealed class Client : IClient, IDisposable
     {
         if (!Disposed) return;
 
-        throw new ObjectDisposedException(nameof(Client));
+        throw new ObjectDisposedException(nameof(WebSocketClient));
     }
 
     public Task StartAsync()
@@ -87,6 +91,18 @@ internal sealed class Client : IClient, IDisposable
                 {
                     break;
                 }
+
+                ArraySegment<byte> data = new ArraySegment<byte>(
+                    buffer, 0, res.Count);
+
+                if (res.MessageType is WebSocketMessageType.Text)
+                {
+                    ProcessTextData(data);
+                }
+                else if (res.MessageType is WebSocketMessageType.Binary)
+                {
+                    ProcessBinaryData(data);
+                }
             }
         }
         catch (Exception e)
@@ -122,6 +138,60 @@ internal sealed class Client : IClient, IDisposable
             
         }
     }
+
+    private void ProcessTextData(ArraySegment<byte> data)
+    {
+        string text = Encoding.UTF8.GetString(data);
+       
+    }
+    private void ProcessJsonData(ArraySegment<byte> data)
+    {
+        string text = Encoding.UTF8.GetString(data);
+        JObject jo;
+        try
+        {
+            jo = JObject.Parse(text);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return;
+        }
+        
+        
+    }
+    private unsafe void ProcessBinaryData(ArraySegment<byte> data)
+    {
+        if (data.Array is null)
+        {
+            throw new InvalidOperationException();
+        }
+        
+        fixed (byte* ptr = &data.Array[data.Offset])
+        {
+            MessageWrapper* wrapper = (MessageWrapper*)ptr;
+            ArraySegment<byte> value = data[(Marshal.SizeOf<MessageWrapper>())..];
+
+            if (NetworkMessageHandler.Handlers.TryGetValue(wrapper->messageType, out var handler))
+            {
+                handler.Process(value);
+            }
+            else
+            {
+                switch (wrapper->messageType)
+                {
+                    case MessageType.Text:
+                        ProcessTextData(value);
+                        break;
+                    case MessageType.Json:
+                        ProcessJsonData(value);
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+        }
+    }
     
     public Task SendMessageAsync(
         string msg, CancellationToken cancellationToken)
@@ -141,7 +211,7 @@ internal sealed class Client : IClient, IDisposable
         ThrowIfDisposed();
         if (m_Socket is null)
         {
-            throw new ObjectDisposedException(nameof(Client));
+            throw new ObjectDisposedException(nameof(WebSocketClient));
         }
         
         return m_Socket.SendAsync(data,
@@ -155,10 +225,10 @@ internal sealed class Client : IClient, IDisposable
 [PublicAPI]
 public interface IClient
 {
-    Task SendMessageAsync(
-        string msg, CancellationToken cancellationToken);
-    Task SendAsync(
-        WebSocketMessageType messageType,
-        ArraySegment<byte> data,
-        CancellationToken cancellationToken);
+    // Task SendMessageAsync(
+    //     string msg, CancellationToken cancellationToken);
+    // Task SendAsync(
+    //     WebSocketMessageType messageType,
+    //     ArraySegment<byte> data,
+    //     CancellationToken cancellationToken);
 }
