@@ -4,24 +4,32 @@ using JetBrains.Annotations;
 namespace puthon.Socket.Collections;
 
 [PublicAPI]
-internal sealed class Pool<TObject>
-    where TObject : new()
+internal sealed class Pool<TObject>(
+    Func<TObject> createFunction,
+    Action<TObject>? onGetFunction,
+    Action<TObject>? onReserveFunction)
 {
     private readonly Stack<TObject> m_Stack = new();
-    private readonly HashSet<int> m_HashSet = new();
 
-    [return: System.Diagnostics.CodeAnalysis.NotNull]
+    [return: System.Diagnostics.CodeAnalysis.NotNull] 
     public TObject GetOrCreate()
     {
         if (m_Stack.TryPop(out var e) || e is null)
         {
-            e = new();
+            e = createFunction.Invoke();
+            if (e is null)
+            {
+                throw new InvalidOperationException();
+            }
         }
-        m_HashSet.Add(e.GetHashCode());
+
+        onGetFunction?.Invoke(e);
         return e;
     }
     public void Reserve([DisallowNull] TObject o)
     {
+        onReserveFunction?.Invoke(o);
+        
         m_Stack.Push(o);
     }
 }
