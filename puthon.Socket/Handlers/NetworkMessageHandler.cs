@@ -11,6 +11,7 @@ public abstract class NetworkMessageHandler
             where THandler : NetworkMessageHandler, new()
         {
             THandler e = new();
+            e.Initialize();
             s_Handlers.Add(e.MessageType, e);
             return this;
         }
@@ -29,6 +30,8 @@ public abstract class NetworkMessageHandler
     public static IReadOnlyDictionary<MessageType, NetworkMessageHandler> Handlers => s_Handlers;
 
     public abstract MessageType MessageType { get; }
+
+    protected internal abstract void Initialize();
     
     public abstract void Process(in IClient client, ArraySegment<byte> value);
     public abstract void Process(in IClient client, JObject jo);
@@ -37,7 +40,22 @@ public abstract class NetworkMessageHandler
 public abstract class NetworkMessageHandler<TMessage> : NetworkMessageHandler
     where TMessage : unmanaged, INetworkMessage
 {
-    public NetworkMessageHandler()
+    private static Func<TMessage, MessageWrapper<TMessage>> s_WrapperFunc;
+
+    public static MessageWrapper<TMessage> CreateMessage(TMessage msg)
+    {
+        return s_WrapperFunc.Invoke(msg);
+    }
+    
+    protected NetworkMessageHandler()
+    {
+        s_WrapperFunc = x =>
+        {
+            return new MessageWrapper<TMessage>(MessageType, x);
+        };
+    }
+
+    protected internal override void Initialize()
     {
     }
     

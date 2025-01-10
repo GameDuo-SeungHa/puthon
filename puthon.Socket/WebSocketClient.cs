@@ -2,15 +2,13 @@ using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text;
-using JetBrains.Annotations;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using puthon.Socket.Collections;
 using puthon.Socket.Messages;
 
 namespace puthon.Socket;
 
-internal sealed class WebSocketClient : IClient, IDisposable
+internal sealed partial class WebSocketClient : IClient, IDisposable
 {
     private static ulong s_ConnectionCount;
 
@@ -47,9 +45,13 @@ internal sealed class WebSocketClient : IClient, IDisposable
         m_Cts?.Dispose();
         m_Cts = null;
         
+        DisposeSettings();
+        
         Disposed = true;
         s_Pool.Reserve(this);
     }
+
+    private partial void DisposeSettings();
 
     [Conditional("DEBUG")]
     private void ThrowIfDisposed()
@@ -145,28 +147,8 @@ internal sealed class WebSocketClient : IClient, IDisposable
         
         Dispose();
     }
-    private async Task UpdateSendAsync()
-    {
-        try
-        {
-            while (m_Socket is not null)
-            {
-                if (m_Socket.State is WebSocketState.Closed
-                    or WebSocketState.Aborted)
-                {
-                    break;
-                }
 
-                // await SendMessageAsync("test", CancellationToken.None);
-
-                await Task.Yield();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-    }
+    private partial Task UpdateSendAsync();
    
     private unsafe void ProcessBinaryData(ArraySegment<byte> data)
     {
@@ -191,43 +173,4 @@ internal sealed class WebSocketClient : IClient, IDisposable
             }
         }
     }
-    
-    public Task SendMessageAsync(
-        string msg, CancellationToken cancellationToken)
-    {
-        ThrowIfDisposed();
-        
-        var bytes = Encoding.UTF8.GetBytes(msg);
-        var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
-        
-        return SendAsync(
-            WebSocketMessageType.Text,
-            arraySegment,
-            cancellationToken);
-    }
-    public Task SendAsync(WebSocketMessageType messageType, ArraySegment<byte> data, CancellationToken cancellationToken)
-    {
-        ThrowIfDisposed();
-        if (m_Socket is null)
-        {
-            throw new ObjectDisposedException(nameof(WebSocketClient));
-        }
-        
-        return m_Socket.SendAsync(data,
-            messageType,
-            true,
-            cancellationToken);
-        ;
-    }
-}
-
-[PublicAPI]
-public interface IClient
-{
-    // Task SendMessageAsync(
-    //     string msg, CancellationToken cancellationToken);
-    // Task SendAsync(
-    //     WebSocketMessageType messageType,
-    //     ArraySegment<byte> data,
-    //     CancellationToken cancellationToken);
 }

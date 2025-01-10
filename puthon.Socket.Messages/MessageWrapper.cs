@@ -4,11 +4,11 @@ using Newtonsoft.Json;
 namespace puthon.Socket.Messages;
 
 [Serializable, JsonObject(MemberSerialization.OptIn)]
-public struct MessageWrapper<TMessage>
+public struct MessageWrapper<TMessage>(MessageType type, TMessage data)
     where TMessage : INetworkMessage
 {
-    [JsonProperty] public MessageType messageType;
-    [JsonProperty] public TMessage data;
+    [JsonProperty] public MessageType messageType = type;
+    [JsonProperty] public TMessage data = data;
 }
 
 [Serializable]

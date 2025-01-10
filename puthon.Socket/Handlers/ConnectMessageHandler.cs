@@ -10,5 +10,7 @@ public sealed class ConnectMessageHandler : NetworkMessageHandler<ConnectMessage
     public override void Process(in IClient client, in ConnectMessage message)
     {
         Console.WriteLine("connect msg received");
+
+        client.Settings.SetValue(SettingType.PreferJson, message.json);
     }
 }
